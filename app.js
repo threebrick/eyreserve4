@@ -207,3 +207,8 @@ dialog.matches('builtin.intent.alarm.delete_alarm', [
 ]);
 
 dialog.onDefault(builder.DialogAction.send("I'm sorry I didn't understand. I can only create & delete alarms."));
+
+server.get('/', restify.serveStatic({
+ directory: __dirname,
+ default: '/index.html'
+}));
