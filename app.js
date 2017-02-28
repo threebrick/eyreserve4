@@ -13,7 +13,7 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
 var bot = new builder.UniversalBot(connector);
-server.post('/api/messages', connector.listen());
+server.post('https://eyreserve.azurewebsites.net/api/messages', connector.listen());
 
 // Create LUIS recognizer that points at our model and add it as the root '/' dialog for our Cortana Bot.
 var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b775b712-5d48-4234-a325-fcec31f4fbee?subscription-key=8a605684fc204a3ea3c6f29e2a390002';
@@ -54,12 +54,12 @@ dialog.matches('Reserve Seat', [
           dateEntity: dateEntity ? dateEntity.entity : null
         };
 
-        console.log('city - %s', cityEntity.entity);
-        console.log('state - %s', stateEntity.entity);
-        console.log('building - %s', buildingEntity.entity);
-        console.log('floor - %s', floorEntity.entity);
+ //       console.log('city - %s', cityEntity.entity);
+ //       console.log('state - %s', stateEntity.entity);
+  //      console.log('building - %s', buildingEntity.entity);
+  //      console.log('floor - %s', floorEntity.entity);
        // console.log('Seat = ' + seatEntity.entity);
-        console.log('Date = ' + dateEntity.entity);
+  //      console.log('Date = ' + dateEntity.entity);
       //  console.log('Duration = ' + durationEntity.entity);
         
         // Prompt for title
