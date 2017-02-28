@@ -1,0 +1,220 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.14393}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang9 Duration - 1hr 2hr etc\par
+Time\par
+Show available seats - buttons\par
+Buildings - Show button options\par
+Congrats message once complete\par
+var builder = require('botbuilder');\par
+var restify = require('restify');\par
+\par
+// Setup Restify Server\par
+var server = restify.createServer();\par
+server.listen(process.env.port || process.env.PORT || 3978, function () \{\par
+    console.log('%s listening to %s', server.name, server.url);\par
+\});\par
+\par
+// Create chat bot\par
+var connector = new builder.ChatConnector(\{\par
+    appId: process.env.MICROSOFT_APP_ID,\par
+    appPassword: process.env.MICROSOFT_APP_PASSWORD\par
+\});\par
+var bot = new builder.UniversalBot(connector);\par
+server.post('/api/messages', connector.listen());\par
+\par
+// Create LUIS recognizer that points at our model and add it as the root '/' dialog for our Cortana Bot.\par
+var model = '{{\field{\*\fldinst{HYPERLINK https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b775b712-5d48-4234-a325-fcec31f4fbee?subscription-key=8a605684fc204a3ea3c6f29e2a390002 }}{\fldrslt{https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b775b712-5d48-4234-a325-fcec31f4fbee?subscription-key=8a605684fc204a3ea3c6f29e2a390002\ul0\cf0}}}}\f0\fs22 ';\par
+var recognizer = new builder.LuisRecognizer(model);\par
+\par
+//var dialog = new builder.IntentDialog(\{ recognizers: [recognizer] \});\par
+//bot.dialog('/', dialog);\par
+\par
+// Add intent handlers\par
+//dialog.matches('Reserve Seat', builder.DialogAction.send('Reserve a hot seat'));\par
+//dialog.matches('Reserve a Conference Room', builder.DialogAction.send('Reserve a conference room'));\par
+//dialog.onDefault(builder.DialogAction.send("I'm sorry I didn't understand. I can only reserve a hot seat or a conference room."));\par
+\par
+\par
+var dialog = new builder.IntentDialog(\{ recognizers: [recognizer] \});\par
+bot.dialog('/', dialog);\par
+\par
+// Add intent handlers\par
+dialog.matches('Reserve Seat', [\par
+    function (session, args, next) \{\par
+        // Resolve and store any entities passed from LUIS.\par
+        \par
+        var cityEntity = builder.EntityRecognizer.findEntity(args.entities, 'builtin.geography.city');\par
+        var stateEntity = builder.EntityRecognizer.findEntity(args.entities, 'builtin.geography.us_state');\par
+        var floorEntity = builder.EntityRecognizer.findEntity(args.entities, 'Floor');\par
+        var buildingEntity = builder.EntityRecognizer.findEntity(args.entities, 'Building');\par
+        var seatEntity = builder.EntityRecognizer.findEntity(args.entities, 'Seat');\par
+        var durationEntity = builder.EntityRecognizer.findEntity(args.entities, 'Duration');\par
+        var dateEntity = builder.EntityRecognizer.findEntity(args.entities, 'builtin.datetime.date');\par
+\par
+        var seatassignment = session.dialogData.seatassignment = \{\par
+          cityEntity: cityEntity ? cityEntity.entity : null,\par
+          stateEntity: stateEntity ? stateEntity.entity : null,\par
+          buildingEntity: buildingEntity ? buildingEntity.entity : null,\par
+          floorEntity: floorEntity ? floorEntity.entity : null,\par
+          seatEntity: seatEntity ? seatEntity.entity : null,\par
+          durationEntity: durationEntity ? durationEntity.entity : null,\par
+          dateEntity: dateEntity ? dateEntity.entity : null\par
+        \};\par
+\par
+        console.log('city - %s', cityEntity.entity);\par
+        console.log('state - %s', stateEntity.entity);\par
+        console.log('building - %s', buildingEntity.entity);\par
+        console.log('floor - %s', floorEntity.entity);\par
+       // console.log('Seat = ' + seatEntity.entity);\par
+        console.log('Date = ' + dateEntity.entity);\par
+      //  console.log('Duration = ' + durationEntity.entity);\par
+        \par
+        // Prompt for title\par
+        if (!seatassignment.cityEntity) \{\par
+            builder.Prompts.text(session, 'What city?');\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results, next) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            seatassignment.cityEntity = results.response;\par
+        \}\par
+\par
+        // Prompt for time (title will be blank if the user said cancel)\par
+        if (seatassignment.cityEntity && !seatassignment.stateEntity) \{\par
+            builder.Prompts.text(session, 'What state?');\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results, next) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            seatassignment.stateEntity = results.response;\par
+        \}\par
+\par
+        // Prompt for time (title will be blank if the user said cancel)\par
+        if (seatassignment.cityEntity && seatassignment.stateEntity && !seatassignment.buildingEntity) \{\par
+            builder.Prompts.text(session, 'What building?');\par
+           //var style = builder.ListStyle.button;\par
+           // builder.Prompts.choice(session, "Which building?", "Building A|Building B|Building C", \{ listStyle: style \});\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results, next) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            \par
+            seatassignment.buildingEntity = results.response;\par
+        \}\par
+\par
+        \par
+\par
+        // Prompt for time (title will be blank if the user said cancel)\par
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && !seatassignment.floorEntity) \{\par
+           // builder.Prompts.text(session, 'What building?');\par
+           builder.Prompts.text(session, 'What floor?');\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results, next) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            \par
+            seatassignment.floorEntity = results.response;\par
+        \}\par
+\par
+        // Prompt for time (title will be blank if the user said cancel)\par
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && !seatassignment.seatEntity) \{\par
+            builder.Prompts.text(session, 'What seat?');\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results, next) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            seatassignment.seatEntity = results.response;\par
+        \}\par
+\par
+        // Prompt for time (title will be blank if the user said cancel)\par
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && seatassignment.seatEntity && !seatassignment.dateEntity) \{\par
+            builder.Prompts.text(session, 'What day?');\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results, next) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            seatassignment.seatEntity = results.response;\par
+        \}\par
+\par
+        // Prompt for time (title will be blank if the user said cancel)\par
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && seatassignment.seatEntity && seatassignment.dateEntity && !seatassignment.durationEntity) \{\par
+            builder.Prompts.text(session, 'What duration?');\par
+        \} else \{\par
+            next();\par
+        \}\par
+    \},\par
+    function (session, results) \{\par
+        var seatassignment = session.dialogData.seatassignment;\par
+        if (results.response) \{\par
+            \par
+            seatassignment.durationEntity = results.response;\par
+        \}\par
+        \par
+        // Set the alarm (if title or timestamp is blank the user said cancel)\par
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && seatassignment.seatEntity && seatassignment.dateEntity && seatassignment.durationEntity) \{\par
+            \par
+            session.send('Ok, I will now reserve seat %s for you in %s, %s, at the %s on the %s on %s for %s',\par
+                seatassignment.seatEntity,\par
+                seatassignment.cityEntity,\par
+                seatassignment.stateEntity,\par
+                seatassignment.buildingEntity,\par
+                seatassignment.floorEntity,\par
+                seatassignment.dateEntity,\par
+                seatassignment.durationEntity);\par
+        \} else \{\par
+            session.send('Ok... no problem.');\par
+        \}\par
+    \}\par
+]);\par
+\par
+dialog.matches('builtin.intent.alarm.delete_alarm', [\par
+    function (session, args, next) \{\par
+        // Resolve entities passed from LUIS.\par
+        var title;\par
+        var entity = builder.EntityRecognizer.findEntity(args.entities, 'builtin.alarm.title');\par
+        if (entity) \{\par
+            // Verify its in our set of alarms.\par
+            title = builder.EntityRecognizer.findBestMatch(alarms, entity.entity);\par
+        \}\par
+        \par
+        // Prompt for alarm name\par
+        if (!title) \{\par
+            builder.Prompts.choice(session, 'Which alarm would you like to delete?', alarms);\par
+        \} else \{\par
+            next(\{ response: title \});\par
+        \}\par
+    \},\par
+    function (session, results) \{\par
+        // If response is null the user canceled the task\par
+        if (results.response) \{\par
+            delete alarms[results.response.entity];\par
+            session.send("Deleted the '%s' alarm.", results.response.entity);\par
+        \} else \{\par
+            session.send('Ok... no problem.');\par
+        \}\par
+    \}\par
+]);\par
+\par
+dialog.onDefault(builder.DialogAction.send("I'm sorry I didn't understand. I can only create & delete alarms."));\par
+\par
+}
+ 
