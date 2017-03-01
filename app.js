@@ -18,7 +18,7 @@ var bot = new builder.UniversalBot(connector);
 server.post('https://eyreserve.azurewebsites.net/api/messages', connector.listen());
 
 // Create LUIS recognizer that points at our model and add it as the root '/' dialog for our Cortana Bot.
-var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b775b712-5d48-4234-a325-fcec31f4fbee?subscription-key=8a605684fc204a3ea3c6f29e2a390002';
+var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b775b712-5d48-4234-a325-fcec31f4fbee?subscription-key=8a605684fc204a3ea3c6f29e2a390002&verbose=true';
 var recognizer = new builder.LuisRecognizer(model);
 
 //var dialog = new builder.IntentDialog({ recognizers: [recognizer] });
@@ -128,21 +128,10 @@ dialog.matches('Reserve Seat', [
             seatassignment.floorEntity = results.response;
         }
 
-        // Prompt for time (title will be blank if the user said cancel)
-        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && !seatassignment.seatEntity) {
-            builder.Prompts.text(session, 'What seat?');
-        } else {
-            next();
-        }
-    },
-    function (session, results, next) {
-        var seatassignment = session.dialogData.seatassignment;
-        if (results.response) {
-            seatassignment.seatEntity = results.response;
-        }
+       
 
         // Prompt for time (title will be blank if the user said cancel)
-        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && seatassignment.seatEntity && !seatassignment.dateEntity) {
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && !seatassignment.dateEntity) {
             builder.Prompts.text(session, 'What day?');
         } else {
             next();
@@ -155,17 +144,33 @@ dialog.matches('Reserve Seat', [
         }
 
         // Prompt for time (title will be blank if the user said cancel)
-        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && seatassignment.seatEntity && seatassignment.dateEntity && !seatassignment.durationEntity) {
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && seatassignment.dateEntity && !seatassignment.durationEntity) {
             builder.Prompts.text(session, 'How long will you need this seat?');
+        } else {
+            next();
+        }
+    },
+    function (session, results, next) {
+        var seatassignment = session.dialogData.seatassignment;
+        if (results.response) {
+            
+            seatassignment.durationEntity = results.response;
+        }
+
+        // Prompt for time (title will be blank if the user said cancel)
+        if (seatassignment.cityEntity && seatassignment.stateEntity && seatassignment.buildingEntity && seatassignment.floorEntity && !seatassignment.seatEntity) {
+            //builder.Prompts.text(session, 'What seat?');
+             var style = builder.ListStyle.button;
+            builder.Prompts.choice(session, "We have 3 hot-seats available on the " + seatassignment.floorEntity + ". Please select the seat that you would like?", "Seat H101|Seat J205|Seat K102", { listStyle: style });
         } else {
             next();
         }
     },
     function (session, results) {
         var seatassignment = session.dialogData.seatassignment;
-        if (results.response) {
+        if (results.response.entity) {
             
-            seatassignment.durationEntity = results.response;
+            seatassignment.seatEntity = results.response.entity;
         }
         
         // Set the alarm (if title or timestamp is blank the user said cancel)
