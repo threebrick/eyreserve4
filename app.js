@@ -34,7 +34,7 @@ var dialog = new builder.IntentDialog({ recognizers: [recognizer] });
 bot.dialog('/', dialog);
 
 dialog.onBegin(function (session, args, next) {
-    session.send("Hi... I'm the EY Reserve bot. I can help you reserve a seat or a conference room.  How can I assist you do today?");
+    session.send("Hi... I'm the EY Reserve bot. I can help you reserve a seat or a conference room.  How can I assist you today?");
    // next();
 });
 
